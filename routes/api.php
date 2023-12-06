@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Exceptions\Api\RequestNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -17,3 +18,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('auth:sanctum')->get('/user', fn(Request $request) => $request->user());
+
+Route::fallback(function (Request $request): void {
+    throw new RequestNotFoundException();
+});
