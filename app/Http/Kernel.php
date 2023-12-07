@@ -70,5 +70,8 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'resource.type' => \App\Http\Middleware\Api\ValidateResourceType::class,
+        'resource.fields' => \App\Http\Middleware\Api\ValidateResourceFields::class,
+        'resourse.sort' => \App\Http\Middleware\Api\ValidateResourceSort::class,
+        'resource.filter' => \App\Http\Middleware\Api\ValidateResourceFilter::class,
     ];
 }
