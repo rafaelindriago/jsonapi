@@ -14,6 +14,9 @@
         <testsuite name="User">
             <directory>tests/Feature/Api/User</directory>
         </testsuite>
+        <testsuite name="Post">
+            <directory>tests/Feature/Api/Post</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>
