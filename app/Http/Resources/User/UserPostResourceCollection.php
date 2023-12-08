@@ -6,9 +6,8 @@ namespace App\Http\Resources\User;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceCollection;
-use Illuminate\Support\Facades\URL;
 
-class UserResourceCollection extends ResourceCollection
+class UserPostResourceCollection extends ResourceCollection
 {
     /**
      * Transform the resource collection into an array.
@@ -19,10 +18,6 @@ class UserResourceCollection extends ResourceCollection
     {
         return [
             'data'  => $this->collection,
-
-            'links' => [
-                'self'  => URL::route('users.index', $request->query()),
-            ],
         ];
     }
 }

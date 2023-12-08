@@ -26,6 +26,10 @@ class UserResource extends JsonResource
                 'email' => $this->whenHas('email', $this->email),
                 'type'  => $this->whenHas('type', $this->type),
             ],
+
+            'relationships' => [
+                'posts' => new UserPostResourceCollection($this->whenLoaded('posts')),
+            ],
         ];
     }
 

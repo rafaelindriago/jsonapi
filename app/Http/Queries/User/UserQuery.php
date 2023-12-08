@@ -25,7 +25,7 @@ class UserQuery extends Query
      * @var array<string, string>
      */
     protected $relationFields = [
-
+        'posts' => 'posts',
     ];
 
     /**

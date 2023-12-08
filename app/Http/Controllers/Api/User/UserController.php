@@ -26,7 +26,7 @@ class UserController extends Controller
         $this->middleware('resource.type:users')
             ->only(['store', 'update']);
 
-        $this->middleware('resource.fields:users,name,email,type')
+        $this->middleware('resource.fields:users,name,email,type,posts')
             ->only(['index']);
 
         $this->middleware('resourse.sort:users,name,email')
