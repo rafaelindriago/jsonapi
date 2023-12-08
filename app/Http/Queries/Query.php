@@ -6,6 +6,8 @@ namespace App\Http\Queries;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
@@ -168,16 +170,28 @@ class Query
                 if (isset($this->relationFields[$requestedField])) {
                     $relationField = $this->relationFields[$requestedField];
 
-                    $localKey = $this->builder->getModel()
-                        ->{$relationField}()
-                        ->getModel()
-                        ->getKeyName();
+                    $relation = $this->builder->getModel()
+                        ->{$relationField}();
 
-                    $foreignKey = $this->builder->getModel()
-                        ->{$relationField}()
-                        ->getForeignKeyName();
+                    if ($relation instanceof HasOneOrMany) {
+                        $relatedKey = $relation->getRelated()
+                            ->getKeyName();
 
-                    $this->builder->with("{$relationField}:{$localKey},{$foreignKey}");
+                        $foreignKey = $relation->getForeignKeyName();
+
+                        $this->builder->with("{$relationField}:{$relatedKey},{$foreignKey}");
+                    }
+
+                    if ($relation instanceof BelongsTo) {
+                        $parentKey = $relation->getParent()
+                            ->getKeyName();
+
+                        $foreignKey = $relation->getForeignKeyName();
+
+                        $this->builder->addSelect($foreignKey);
+
+                        $this->builder->with("{$relationField}:{$parentKey}");
+                    }
                 }
             }
         }
