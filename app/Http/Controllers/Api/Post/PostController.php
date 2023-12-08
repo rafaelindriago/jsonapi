@@ -26,6 +26,9 @@ class PostController extends Controller
         $this->middleware('resource.type:posts')
             ->only(['store', 'update']);
 
+        $this->middleware('resource.id:posts')
+            ->only(['update']);
+
         $this->middleware('resource.fields:posts,title,content,writer')
             ->only(['index']);
 
