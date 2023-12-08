@@ -21,6 +21,8 @@ Route::middleware('auth:sanctum')->get('/user', fn(Request $request) => $request
 
 Route::apiResource('users', \App\Http\Controllers\Api\User\UserController::class);
 
+Route::apiResource('posts', \App\Http\Controllers\Api\Post\PostController::class);
+
 Route::fallback(function (Request $request): void {
     throw new RequestNotFoundException();
 });
