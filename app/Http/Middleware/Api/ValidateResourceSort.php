@@ -19,7 +19,7 @@ class ValidateResourceSort
     public function handle(Request $request, Closure $next, string $type, array|string ...$sortable): Response
     {
         if ($request->has("sort.{$type}")) {
-            $requestedSorts = $request->string("sort.{$type}")
+            $requestedSortings = $request->string("sort.{$type}")
                 ->explode(',')
                 ->transform(
                     fn(string $requestedSort) => mb_substr($requestedSort, 0, 1) === '-'
@@ -27,11 +27,11 @@ class ValidateResourceSort
                         : $requestedSort
                 );
 
-            foreach ($requestedSorts as $requestedSort) {
+            foreach ($requestedSortings as $requestedSort) {
                 if ( ! in_array($requestedSort, $sortable)) {
-                    $resourceFieldException = new ResourceSortException();
+                    $resourceSortException = new ResourceSortException();
 
-                    throw $resourceFieldException->setType($type)
+                    throw $resourceSortException->setType($type)
                         ->setField($requestedSort);
                 }
             }

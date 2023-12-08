@@ -24,9 +24,9 @@ class ValidateResourceFilter
 
             foreach ($requestedFilters as $requestedFilter) {
                 if ( ! in_array($requestedFilter, $filterable)) {
-                    $resourceFieldException = new ResourceFilterException();
+                    $resourceFilterException = new ResourceFilterException();
 
-                    throw $resourceFieldException->setType($type)
+                    throw $resourceFilterException->setType($type)
                         ->setField($requestedFilter);
                 }
             }

@@ -5,16 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\User;
 
 use App\Http\Controllers\Controller;
+use App\Http\Queries\User\UserQuery;
 use App\Http\Requests\Api\User\StoreUserRequest;
 use App\Http\Requests\Api\User\UpdateUserRequest;
 use App\Http\Resources\User\UserResource;
 use App\Http\Resources\User\UserResourceCollection;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\Json\ResourceCollection;
-use Illuminate\Support\Stringable;
 
 class UserController extends Controller
 {
@@ -34,52 +32,19 @@ class UserController extends Controller
         $this->middleware('resourse.sort:users,name,email')
             ->only(['index']);
 
-        $this->middleware('resource.filter:users,name,email')
+        $this->middleware('resource.filter:users,name,email,type')
             ->only(['index']);
     }
 
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): ResourceCollection
+    public function index(): ResourceCollection
     {
-        $users = User::query()
-            ->when(
-                $request->has('sort.users'),
-                function (Builder $query) use ($request): void {
-                    $request->string('sort.users')
-                        ->explode(',')
-                        ->mapInto(Stringable::class)
-                        ->each(function (Stringable $sort) use ($query): void {
-                            if ( ! $sort->startsWith('-')) {
-                                $query->orderBy($sort, 'asc');
-                            } else {
-                                $query->orderBy($sort->after('-'), 'desc');
-                            }
-                        });
-                }
-            )
-            ->when(
-                $request->has('filter.users'),
-                function (Builder $query) use ($request): void {
-                    $request->collect('filter.users')
-                        ->each(function (string $filter, string $field) use ($query): void {
-                            $query->where($field, 'like', $filter);
-                        });
-                }
-            )
-            ->paginate(
-                $request->input('page.size', 10),
-                $request->string('fields.users')
-                    ->whenEmpty(
-                        fn(Stringable $fields) => $fields->append('*'),
-                        fn(Stringable $fields) => $fields->prepend('id,')
-                    )
-                    ->explode(',')
-                    ->toArray(),
-                'page[number]',
-                $request->input('page.number', 1)
-            );
+        $builder = User::query();
+
+        $users = UserQuery::make($builder)
+            ->paginate();
 
         return new UserResourceCollection($users);
     }
