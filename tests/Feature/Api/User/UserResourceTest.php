@@ -34,9 +34,27 @@ class UserResourceTest extends TestCase
 
         $response->assertStatus(201);
         $response->assertHeader('Location', URL::route('users.show', 1));
+        $response->assertJson([
+            'data' => [
+                'type'  => 'users',
+
+                'attributes' => [
+                    'name'  => 'Rafael Indriago',
+                    'email' => 'rafael.indriago93@gmail.com',
+                    'type'  => 'writer',
+                ],
+            ],
+
+            'links' => [
+                'self'  => URL::route('users.show', 1),
+            ],
+        ]);
 
         $this->assertDatabaseHas('users', [
-            'email' => 'rafael.indriago93@gmail.com',
+            'id'        => 1,
+            'name'      => 'Rafael Indriago',
+            'email'     => 'rafael.indriago93@gmail.com',
+            'type'      => 'writer',
         ]);
     }
 
@@ -61,7 +79,7 @@ class UserResourceTest extends TestCase
         $response->assertJson([
             'data' => [
                 'type'  => 'users',
-                'id'    => 1,
+                'id'    => '1',
 
                 'attributes' => [
                     'name'      => 'Rafael Indriago',
@@ -69,6 +87,7 @@ class UserResourceTest extends TestCase
                     'type'      => 'writer',
                 ],
             ],
+
             'links' => [
                 'self'  => URL::route('users.show', 1),
             ],
@@ -89,7 +108,7 @@ class UserResourceTest extends TestCase
         $data = [
             'data' => [
                 'type'  => 'users',
-                'id'    => 1,
+                'id'    => '1',
 
                 'attributes' => [
                     'name'      => 'Andres Moya',
@@ -108,7 +127,7 @@ class UserResourceTest extends TestCase
         $response->assertJson([
             'data' => [
                 'type'  => 'users',
-                'id'    => 1,
+                'id'    => '1',
 
                 'attributes' => [
                     'name'      => 'Andres Moya',
@@ -116,14 +135,17 @@ class UserResourceTest extends TestCase
                     'type'      => 'writer',
                 ],
             ],
+
             'links' => [
                 'self'  => URL::route('users.show', 1),
             ],
         ]);
 
         $this->assertDatabaseHas('users', [
+            'id'    => 1,
             'name'  => 'Andres Moya',
             'email' => 'rafael.indriago93@gmail.com',
+            'type'  => 'writer',
         ]);
     }
 
@@ -150,7 +172,10 @@ class UserResourceTest extends TestCase
         ]);
 
         $this->assertDatabaseMissing('users', [
+            'id'    => 1,
+            'name'  => 'Andres Moya',
             'email' => 'rafael.indriago93@gmail.com',
+            'type'  => 'writer',
         ]);
     }
 }

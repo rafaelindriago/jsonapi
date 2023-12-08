@@ -41,6 +41,7 @@ class UserResourceCollectionTest extends TestCase
                     ],
                 ],
             ],
+
             'links' => [
                 'self'  => URL::route('users.index'),
             ],
