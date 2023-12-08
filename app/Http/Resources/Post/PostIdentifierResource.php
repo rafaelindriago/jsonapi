@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Resources\User;
+namespace App\Http\Resources\Post;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\URL;
 
-class UserPostResource extends JsonResource
+class PostIdentifierResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -19,6 +20,10 @@ class UserPostResource extends JsonResource
         return [
             'type'  => 'posts',
             'id'    => (string) $this->id,
+
+            'links' => [
+                'related'   => URL::route('posts.show', $this),
+            ],
         ];
     }
 }

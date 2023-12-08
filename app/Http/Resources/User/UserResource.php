@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\User;
 
+use App\Http\Resources\Post\PostIdentifierResourceCollection;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\URL;
@@ -28,7 +29,7 @@ class UserResource extends JsonResource
             ],
 
             'relationships' => [
-                'posts' => new UserPostResourceCollection($this->whenLoaded('posts')),
+                'posts' => new PostIdentifierResourceCollection($this->whenLoaded('posts')),
             ],
         ];
     }

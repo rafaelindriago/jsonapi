@@ -26,7 +26,7 @@ class UserController extends Controller
         $this->middleware('resource.type:users')
             ->only(['store', 'update']);
 
-        $this->middleware('resource.fields:users,name,email,type,posts')
+        $this->middleware('resource.fields:users,name,email,type')
             ->only(['index']);
 
         $this->middleware('resourse.sort:users,name,email')
@@ -46,7 +46,7 @@ class UserController extends Controller
         $users = UserQuery::make($builder)
             ->paginate();
 
-        return new UserResourceCollection($users);
+        return UserResourceCollection::make($users);
     }
 
     /**
@@ -54,11 +54,13 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request): JsonResource
     {
-        $user = new User($request->validated('data.attributes'));
+        $attributes = $request->validated('data.attributes');
+
+        $user = User::make($attributes);
 
         $user->save();
 
-        return new UserResource($user);
+        return UserResource::make($user);
     }
 
     /**
@@ -74,11 +76,13 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user): JsonResource
     {
-        $user->fill($request->validated('data.attributes'));
+        $attributes = $request->validated('data.attributes');
+
+        $user->fill($attributes);
 
         $user->save();
 
-        return new UserResource($user);
+        return UserResource::make($user);
     }
 
     /**
@@ -88,6 +92,6 @@ class UserController extends Controller
     {
         $user->delete();
 
-        return new JsonResource([]);
+        return JsonResource::make([]);
     }
 }

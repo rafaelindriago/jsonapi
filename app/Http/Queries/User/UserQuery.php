@@ -20,15 +20,6 @@ class UserQuery extends Query
     ];
 
     /**
-     * The map of relation fields that can be requested.
-     *
-     * @var array<string, string>
-     */
-    protected $relationFields = [
-        'posts' => 'posts',
-    ];
-
-    /**
      * The map of fields that can be sorted.
      *
      * @var array<string, string>

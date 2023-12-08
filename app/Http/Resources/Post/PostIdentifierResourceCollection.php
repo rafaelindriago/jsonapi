@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Resources\User;
+namespace App\Http\Resources\Post;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 
-class UserPostResourceCollection extends ResourceCollection
+class PostIdentifierResourceCollection extends ResourceCollection
 {
     /**
      * Transform the resource collection into an array.
