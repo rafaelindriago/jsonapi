@@ -12,6 +12,7 @@ use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
+use InvalidArgumentException;
 
 class Query
 {
@@ -340,14 +341,16 @@ class Query
                         $relationField = $this->relationFilterable[$requestedField][$requestedOperator];
                         $operator = $this->operators[$requestedOperator];
 
-                        [$relationPath] = array_slice(explode('.', $relationField), 0, -1);
-                        [$field] = array_slice(explode('.', $relationField), -1);
+                        $relationPath = mb_substr($relationField, 0, mb_strrpos($relationField, '.'));
+                        $field = mb_substr($relationField, mb_strlen($relationPath) + 1);
 
                         $this->builder->whereRelation($relationPath, $field, $operator, $filter);
                     }
                 }
 
-                $this->builder->where($filters);
+                if ( ! empty($filters)) {
+                    $this->builder->where($filters);
+                }
             }
         }
     }
