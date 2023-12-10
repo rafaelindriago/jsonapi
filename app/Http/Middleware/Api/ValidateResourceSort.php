@@ -16,10 +16,10 @@ class ValidateResourceSort
      *
      * @param Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response) $next
      */
-    public function handle(Request $request, Closure $next, string $type, array|string ...$sortable): Response
+    public function handle(Request $request, Closure $next, array|string ...$sortable): Response
     {
-        if ($request->has("sort.{$type}")) {
-            $requestedSortings = $request->string("sort.{$type}")
+        if ($request->filled('sort')) {
+            $requestedSortings = $request->string('sort')
                 ->explode(',')
                 ->transform(
                     fn(string $requestedSort) => mb_substr($requestedSort, 0, 1) === '-'
@@ -31,8 +31,7 @@ class ValidateResourceSort
                 if ( ! in_array($requestedSort, $sortable)) {
                     $resourceSortException = new ResourceSortException();
 
-                    throw $resourceSortException->setType($type)
-                        ->setField($requestedSort);
+                    throw $resourceSortException->setField($requestedSort);
                 }
             }
         }

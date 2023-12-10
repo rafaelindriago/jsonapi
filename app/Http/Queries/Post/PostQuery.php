@@ -37,11 +37,31 @@ class PostQuery extends Query
     ];
 
     /**
+     * The map of relation fields that can be sorted.
+     *
+     * @var array<string, string>
+     */
+    protected $relationSortable = [
+        'writer.name'   => 'writer.name',
+        'writer.email'  => 'writer.email',
+    ];
+
+    /**
      * The map of fields that can be filtered.
      *
      * @var array<string, array>
      */
     protected $filterable = [
         'title' => ['%%' => 'title'],
+    ];
+
+    /**
+     * The map of relation fields that can be filtered.
+     *
+     * @var array<string, array>
+     */
+    protected $relationFilterable = [
+        'writer.name'   => ['%%'    => 'writer.name'],
+        'writer.email'  => ['%%'    => 'writer.email'],
     ];
 }

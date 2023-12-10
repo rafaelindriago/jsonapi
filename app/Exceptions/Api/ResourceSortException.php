@@ -11,13 +11,6 @@ use Illuminate\Http\Request;
 class ResourceSortException extends Exception
 {
     /**
-     * The resource type.
-     *
-     * @var string
-     */
-    protected $type;
-
-    /**
      * The non sortable field.
      *
      * @var string
@@ -37,26 +30,16 @@ class ResourceSortException extends Exception
                     'title'     => 'Bad request',
                     'detail'    => empty(trim($this->field)) === false
                                     ? "The field {$this->field} is not sortable."
-                                    : "The sort[{$this->type}] parameter is empty or malformed.",
+                                    : 'The sort parameter is malformed.',
 
                     'source' => [
-                        'parameter' => "sort[{$this->type}]",
+                        'parameter' => 'sort',
                     ],
                 ],
             ],
         ];
 
         return new JsonResponse($data, 400);
-    }
-
-    /**
-     * Set the resource type.
-     */
-    public function setType(string $type): static
-    {
-        $this->type = $type;
-
-        return $this;
     }
 
     /**

@@ -32,10 +32,10 @@ class UserController extends Controller
         $this->middleware('resource.fields:users,name,email,type')
             ->only(['index']);
 
-        $this->middleware('resourse.sort:users,name,email')
+        $this->middleware('resourse.sort:name,email')
             ->only(['index']);
 
-        $this->middleware('resource.filter:users,name,email,type')
+        $this->middleware('resource.filter:name,email,type')
             ->only(['index']);
     }
 

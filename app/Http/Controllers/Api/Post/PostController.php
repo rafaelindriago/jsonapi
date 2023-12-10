@@ -32,10 +32,10 @@ class PostController extends Controller
         $this->middleware('resource.fields:posts,title,content,writer')
             ->only(['index']);
 
-        $this->middleware('resourse.sort:posts,title')
+        $this->middleware('resourse.sort:title,writer.name,writer.email')
             ->only(['index']);
 
-        $this->middleware('resource.filter:posts,title')
+        $this->middleware('resource.filter:title,writer.name,writer.email')
             ->only(['index']);
     }
 

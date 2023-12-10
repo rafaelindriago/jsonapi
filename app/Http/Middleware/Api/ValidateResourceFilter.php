@@ -16,18 +16,17 @@ class ValidateResourceFilter
      *
      * @param Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response) $next
      */
-    public function handle(Request $request, Closure $next, string $type, array|string ...$filterable): Response
+    public function handle(Request $request, Closure $next, array|string ...$filterable): Response
     {
-        if ($request->has("filter.{$type}")) {
-            $requestedFilters = $request->collect("filter.{$type}")
+        if ($request->filled('filter')) {
+            $requestedFilters = $request->collect('filter')
                 ->keys();
 
             foreach ($requestedFilters as $requestedFilter) {
                 if ( ! in_array($requestedFilter, $filterable)) {
                     $resourceFilterException = new ResourceFilterException();
 
-                    throw $resourceFilterException->setType($type)
-                        ->setField($requestedFilter);
+                    throw $resourceFilterException->setField($requestedFilter);
                 }
             }
         }

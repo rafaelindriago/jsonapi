@@ -11,13 +11,6 @@ use Illuminate\Http\Request;
 class ResourceFilterException extends Exception
 {
     /**
-     * The resource type.
-     *
-     * @var string
-     */
-    protected $type;
-
-    /**
      * The non filterable field.
      *
      * @var string
@@ -36,27 +29,17 @@ class ResourceFilterException extends Exception
 
                     'title'     => 'Bad request',
                     'detail'    => empty(trim($this->field)) === false
-                                    ? "The field {$this->field} for {$this->type} is not filterable."
-                                    : "The filter[{$this->type}][{$this->field}] parameter is empty or malformed.",
+                                    ? "The field {$this->field} is not filterable."
+                                    : 'The filter parameter is malformed.',
 
                     'source' => [
-                        'parameter' => "filter[{$this->type}][{$this->field}]",
+                        'parameter' => 'filter',
                     ],
                 ],
             ],
         ];
 
         return new JsonResponse($data, 400);
-    }
-
-    /**
-     * Set the resource type.
-     */
-    public function setType(string $type): static
-    {
-        $this->type = $type;
-
-        return $this;
     }
 
     /**

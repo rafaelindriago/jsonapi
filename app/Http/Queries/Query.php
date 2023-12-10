@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
@@ -36,6 +37,13 @@ class Query
     protected $type;
 
     /**
+     * The table associated with the resource.
+     *
+     * @var string
+     */
+    protected $table;
+
+    /**
      * The map of fields that can be requested.
      *
      * @var array<string, string>
@@ -57,11 +65,25 @@ class Query
     protected $sortable = [];
 
     /**
+     * The map of relation fields that can be sorted.
+     *
+     * @var array<string, string>
+     */
+    protected $relationSortable = [];
+
+    /**
      * The map of fields that can be filtered.
      *
      * @var array<string, array>
      */
     protected $filterable = [];
+
+    /**
+     * The map of relation fields that can be filtered.
+     *
+     * @var array<string, array>
+     */
+    protected $relationFilterable = [];
 
     /**
      * The map of operators that can be used with filters.
@@ -152,6 +174,15 @@ class Query
     }
 
     /**
+     * Resolve the table name associated with the resource from the builder of class property.
+     */
+    protected function resolveResourceTable(): void
+    {
+        $this->table = $this->table ?: $this->builder->getModel()
+            ->getTable();
+    }
+
+    /**
      * Get the requested fields and apply them to the query builder.
      */
     protected function sparseFields(): void
@@ -160,13 +191,15 @@ class Query
             $requestedFields = $this->request->string("fields.{$this->type}")
                 ->explode(',');
 
-            $this->builder->addSelect('id');
+            $this->builder->getQuery()
+                ->addSelect("{$this->table}.id");
 
             foreach ($requestedFields as $requestedField) {
                 if (isset($this->fields[$requestedField])) {
                     $field = $this->fields[$requestedField];
 
-                    $this->builder->addSelect($field);
+                    $this->builder->getQuery()
+                        ->addSelect("{$this->table}.{$field}");
                 }
 
                 if (isset($this->relationFields[$requestedField])) {
@@ -190,12 +223,18 @@ class Query
 
                         $foreignKey = $relation->getForeignKeyName();
 
-                        $this->builder->addSelect($foreignKey);
+                        $this->builder->getQuery()
+                            ->addSelect("{$this->table}.{$foreignKey}");
 
                         $this->builder->with("{$relationField}:{$parentKey}");
                     }
                 }
             }
+        }
+
+        if ($this->builder->getQuery()->columns === null) {
+            $this->builder->getQuery()
+                ->select("{$this->table}.*");
         }
     }
 
@@ -204,8 +243,8 @@ class Query
      */
     protected function sort(): void
     {
-        if ($this->request->has("sort.{$this->type}")) {
-            $requestedSortings = $this->request->string("sort.{$this->type}")
+        if ($this->request->has("sort")) {
+            $requestedSortings = $this->request->string("sort")
                 ->explode(',');
 
             foreach ($requestedSortings as $requestedSort) {
@@ -215,9 +254,52 @@ class Query
 
                 if (isset($this->sortable[$requestedField])) {
                     $field = $this->sortable[$requestedField];
-
-                    $this->builder->orderBy($field, $mode);
                 }
+
+                if (isset($this->relationSortable[$requestedField])) {
+                    $relationField = $this->relationSortable[$requestedField];
+
+                    $relation = null;
+                    $table = $this->table;
+                    $joins = [];
+
+                    foreach ($this->builder->getQuery()->joins ?? [] as $join) {
+                        if ($join instanceof JoinClause) {
+                            $joins[] = $join->table;
+                        }
+                    }
+
+                    foreach (array_slice(explode('.', $relationField), 0, -1) as $relationLevel) {
+                        $relation = $relation instanceof BelongsTo
+                            ? $relation->getModel()
+                                ->{$relationLevel}()
+
+                            : $this->builder->getModel()
+                                ->{$relationLevel}();
+
+                        if ($relation instanceof BelongsTo) {
+                            $parentTable = $relation->getModel()
+                                ->getTable();
+
+                            $parentKey = $relation->getModel()
+                                ->getKeyName();
+
+                            $foreignKey = $relation->getForeignKeyName();
+
+                            if ( ! in_array($parentTable, $joins)) {
+                                $this->builder->getQuery()
+                                    ->join($parentTable, "{$table}.{$foreignKey}", "{$parentTable}.{$parentKey}");
+                            }
+                        }
+
+                        $table = $parentTable;
+                    }
+
+                    [$field] = array_slice(explode('.', $relationField), -1);
+                }
+
+                $this->builder->getQuery()
+                    ->orderBy("{$table}.{$field}", $mode);
             }
         }
     }
@@ -227,8 +309,8 @@ class Query
      */
     protected function filter(): void
     {
-        if ($this->request->has("filter.{$this->type}")) {
-            $requestedFilters = $this->request->collect("filter.{$this->type}");
+        if ($this->request->has('filter')) {
+            $requestedFilters = $this->request->collect('filter');
 
             foreach ($requestedFilters as $requestedField => $requestedFilter) {
                 $filters = [];
