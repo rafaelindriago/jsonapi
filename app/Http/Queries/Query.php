@@ -254,7 +254,7 @@ class Query
                         [$relationPath] = array_slice(explode('.', $relationField), 0, -1);
                         [$field] = array_slice(explode('.', $relationField), -1);
 
-                        $filters[] = [$field, $operator, $filter];
+                        $this->builder->whereRelation($relationPath, $field, $operator, $filter);
                     }
                 }
 
