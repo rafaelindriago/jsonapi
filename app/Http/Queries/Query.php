@@ -68,7 +68,7 @@ class Query
      *
      * @var array<string, string>
      */
-    protected static $operators = [
+    protected $operators = [
         '=='    => '=',
         '!='    => '!=',
         '>>'    => '>',
@@ -235,12 +235,24 @@ class Query
 
                 foreach ($requestedFilter as $requestedOperator => $filter) {
                     if (isset(
-                        $this->filterable[$requestedField][$requestedOperator],
-                        self::$operators[$requestedOperator]
+                        $this->filterable[$requestedField][$requestedOperator], $this->operators[$requestedOperator]
                     )) {
 
                         $field = $this->filterable[$requestedField][$requestedOperator];
-                        $operator = self::$operators[$requestedOperator];
+                        $operator = $this->operators[$requestedOperator];
+
+                        $filters[] = ["{$this->table}.{$field}", $operator, $filter];
+                    }
+
+                    if (isset(
+                        $this->relationFilterable[$requestedField][$requestedOperator], $this->operators[$requestedOperator]
+                    )) {
+
+                        $relationField = $this->relationFilterable[$requestedField][$requestedOperator];
+                        $operator = $this->operators[$requestedOperator];
+
+                        [$relationPath] = array_slice(explode('.', $relationField), 0, -1);
+                        [$field] = array_slice(explode('.', $relationField), -1);
 
                         $filters[] = [$field, $operator, $filter];
                     }
