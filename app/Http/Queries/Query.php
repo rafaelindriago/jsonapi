@@ -240,6 +240,8 @@ class Query
 
     /**
      * Get the requested sortings and apply them to the query builder.
+     *
+     * @throws InvalidArgumentException
      */
     protected function sort(): void
     {
@@ -254,6 +256,9 @@ class Query
 
                 if (isset($this->sortable[$requestedField])) {
                     $field = $this->sortable[$requestedField];
+
+                    $this->builder->getQuery()
+                        ->orderBy("{$this->table}.{$field}", $mode);
                 }
 
                 if (isset($this->relationSortable[$requestedField])) {
@@ -290,16 +295,18 @@ class Query
                                 $this->builder->getQuery()
                                     ->join($parentTable, "{$table}.{$foreignKey}", "{$parentTable}.{$parentKey}");
                             }
-                        }
 
-                        $table = $parentTable;
+                            $table = $parentTable;
+                        } else {
+                            throw new InvalidArgumentException('Only fields from a BelongsTo relationship can be sorted.');
+                        }
                     }
 
                     [$field] = array_slice(explode('.', $relationField), -1);
-                }
 
-                $this->builder->getQuery()
-                    ->orderBy("{$table}.{$field}", $mode);
+                    $this->builder->getQuery()
+                        ->orderBy("{$table}.{$field}", $mode);
+                }
             }
         }
     }
