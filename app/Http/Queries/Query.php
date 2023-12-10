@@ -141,7 +141,7 @@ class Query
     }
 
     /**
-     * Resolve the resource name from the builder or class property.
+     * Resolve the resource type from the builder or class property.
      */
     protected function resolveResourceType(): void
     {
