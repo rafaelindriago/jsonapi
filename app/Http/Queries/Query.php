@@ -86,11 +86,13 @@ class Query
         $this->builder = $builder;
         $this->request = Request::capture();
 
+        $this->resolveResourceType();
+        $this->resolveResourceTable();
+
         if (method_exists($this, 'boot')) {
             call_user_func([$this, 'boot']);
         }
 
-        $this->resolveResourceType();
         $this->sparseFields();
         $this->sort();
         $this->filter();
