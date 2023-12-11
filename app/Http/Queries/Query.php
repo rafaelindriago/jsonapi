@@ -303,7 +303,7 @@ class Query
                         }
                     }
 
-                    [$field] = array_slice(explode('.', $relationField), -1);
+                    $field = mb_substr($relationField, mb_strrpos($relationField, '.') + 1);
 
                     $this->builder->getQuery()
                         ->orderBy("{$table}.{$field}", $mode);
