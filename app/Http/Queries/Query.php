@@ -303,7 +303,7 @@ class Query
                         }
                     }
 
-                    $field = mb_substr($relationField, mb_strrpos($relationField, '.') + 1);
+                    $field = mb_substr(mb_substr($relationField, mb_strrpos($relationField, '.')), 1);
 
                     $this->builder->getQuery()
                         ->orderBy("{$table}.{$field}", $mode);
@@ -342,7 +342,7 @@ class Query
                         $operator = $this->operators[$requestedOperator];
 
                         $relationPath = mb_substr($relationField, 0, mb_strrpos($relationField, '.'));
-                        $field = mb_substr($relationField, mb_strlen($relationPath) + 1);
+                        $field = mb_substr(mb_substr($relationField, mb_strrpos($relationField, '.')), 1);
 
                         $this->builder->whereRelation($relationPath, $field, $operator, $filter);
                     }
