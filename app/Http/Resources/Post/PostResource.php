@@ -33,6 +33,12 @@ class PostResource extends JsonResource
                     new UserIdentifierResource($this->whenLoaded('writer'))
                 ),
             ],
+
+            $this->mergeUnless($request->route('post'), [
+                'links' => [
+                    'self'  => URL::route('posts.show', $this),
+                ],
+            ]),
         ];
     }
 

@@ -31,6 +31,12 @@ class UserResource extends JsonResource
             'relationships' => [
                 'posts' => new PostIdentifierResourceCollection($this->whenLoaded('posts')),
             ],
+
+            $this->mergeUnless($request->route('user'), [
+                'links' => [
+                    'self'  => URL::route('users.show', $this),
+                ],
+            ]),
         ];
     }
 
