@@ -73,6 +73,5 @@ class Kernel extends HttpKernel
         'resource.id' => \App\Http\Middleware\Api\ValidateResourceId::class,
         'resource.fields' => \App\Http\Middleware\Api\ValidateResourceFields::class,
         'resourse.sort' => \App\Http\Middleware\Api\ValidateResourceSort::class,
-        'resource.filter' => \App\Http\Middleware\Api\ValidateResourceFilter::class,
     ];
 }

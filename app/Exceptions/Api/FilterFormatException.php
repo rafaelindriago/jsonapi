@@ -8,14 +8,21 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class ResourceFilterException extends Exception
+class FilterFormatException extends Exception
 {
     /**
-     * The non filterable field.
+     * The field that do not allow the filter.
      *
      * @var string
      */
     protected $field;
+
+    /**
+     * The filter intended to apply.
+     *
+     * @var string
+     */
+    protected $filter;
 
     /**
      * Render the exception into an HTTP response.
@@ -28,12 +35,10 @@ class ResourceFilterException extends Exception
                     'status'    => '400',
 
                     'title'     => 'Bad request',
-                    'detail'    => empty(trim($this->field)) === false
-                                    ? "The field {$this->field} is not filterable."
-                                    : 'The filter parameter is malformed.',
+                    'detail'    => 'The value of the filter has a wrong format.',
 
                     'source' => [
-                        'parameter' => 'filter',
+                        'parameter' => "filter[{$this->field}][{$this->filter}]",
                     ],
                 ],
             ],
@@ -43,11 +48,21 @@ class ResourceFilterException extends Exception
     }
 
     /**
-     * Set the non filterable field.
+     * Set the field that do not allow the filter.
      */
-    public function setField(string $field)
+    public function setField(string $field): static
     {
         $this->field = $field;
+
+        return $this;
+    }
+
+    /**
+     * Set the filter intended to apply.
+     */
+    public function setFilter(string $filter): static
+    {
+        $this->filter = $filter;
 
         return $this;
     }

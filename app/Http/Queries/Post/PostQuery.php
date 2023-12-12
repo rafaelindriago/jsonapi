@@ -52,7 +52,14 @@ class PostQuery extends Query
      * @var array<string, array>
      */
     protected $filterable = [
-        'title' => ['%%' => 'title'],
+        'title' => [
+            'field'     => 'title',
+            'operators' => ['like', 'notLike'],
+        ],
+        'published' => [
+            'field'     => 'published_at',
+            'operators' => ['null', 'notNull', 'afterOrEqual', 'beforeOrEqual'],
+        ],
     ];
 
     /**
@@ -61,7 +68,13 @@ class PostQuery extends Query
      * @var array<string, array>
      */
     protected $relationFilterable = [
-        'writer.name'   => ['%%'    => 'writer.name'],
-        'writer.email'  => ['%%'    => 'writer.email'],
+        'writer.name' => [
+            'field'     => 'writer.name',
+            'operators' => ['like', 'notLike'],
+        ],
+        'writer.email' => [
+            'field'     => 'writer.email',
+            'operators' => ['like', 'notLike'],
+        ],
     ];
 }

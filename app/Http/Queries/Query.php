@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Queries;
 
+use App\Exceptions\Api\FilterFormatException;
+use App\Exceptions\Api\FilterMalformedException;
+use App\Exceptions\Api\FilterNotAllowedException;
+use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,6 +16,7 @@ use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 
 class Query
@@ -92,13 +97,68 @@ class Query
      * @var array<string, string>
      */
     protected $operators = [
-        '=='    => '=',
-        '!='    => '!=',
-        '>>'    => '>',
-        '>='    => '>=',
-        '<<'    => '<',
-        '<='    => '<=',
-        '%%'    => 'like',
+        'equal'             => '=',
+        'notEqual'          => '!=',
+        'greater'           => '>',
+        'greaterOrEqual'    => '>=',
+        'less'              => '<',
+        'lessOrEqual'       => '<=',
+        'like'              => 'like',
+        'notLike'           => 'not like',
+    ];
+
+    /**
+     * The map of nullable operators that can be used with filters.
+     *
+     * @var array
+     */
+    protected $nullableOperators = [
+        'null'      => 'whereNull',
+        'notNull'   => 'whereNotNull',
+    ];
+
+    /**
+     * The map of range operators that can be used with filters.
+     *
+     * @var array<string, string>
+     */
+    protected $rangeOperators = [
+        'between'       => 'whereBetween',
+        'notBetween'    => 'whereNotBetween',
+        'in'            => 'whereIn',
+        'notIn'         => 'whereNotIn',
+    ];
+
+    /**
+     * The map of date operators that can be used with filters.
+     *
+     * @var array<string, array>
+     */
+    protected $dateOperators = [
+        'dateEqual' => [
+            'method'    => 'whereDate',
+            'operator'  => '=',
+        ],
+        'dateNotEqual' => [
+            'method'    => 'whereDate',
+            'operator'  => '!=',
+        ],
+        'after' => [
+            'method'    => 'whereDate',
+            'operator'  => '>',
+        ],
+        'afterOrEqual' => [
+            'method'    => 'whereDate',
+            'operator'  => '>=',
+        ],
+        'before' => [
+            'method'    => 'whereDate',
+            'operator'  => '<',
+        ],
+        'beforeOrEqual' => [
+            'method'    => 'whereDate',
+            'operator'  => '<=',
+        ],
     ];
 
     /**
@@ -314,6 +374,10 @@ class Query
 
     /**
      * Get the requested filters and apply them to the query builder.
+     *
+     * @throws \App\Exceptions\Api\FilterMalformedException
+     * @throws \App\Exceptions\Api\FilterNotAllowedException
+     * @throws \App\Exceptions\Api\FilterFormatException
      */
     protected function filter(): void
     {
@@ -321,30 +385,127 @@ class Query
             $requestedFilters = $this->request->collect('filter');
 
             foreach ($requestedFilters as $requestedField => $requestedFilter) {
+                if ( ! is_array($requestedFilter)) {
+                    throw new FilterMalformedException();
+                }
+
                 $filters = [];
 
                 foreach ($requestedFilter as $requestedOperator => $filter) {
-                    if (isset(
-                        $this->filterable[$requestedField][$requestedOperator], $this->operators[$requestedOperator]
-                    )) {
+                    if (isset($this->filterable[$requestedField])) {
+                        $field = $this->filterable[$requestedField]['field'];
+                        $allowedOperators = $this->filterable[$requestedField]['operators'];
 
-                        $field = $this->filterable[$requestedField][$requestedOperator];
-                        $operator = $this->operators[$requestedOperator];
+                        if (in_array($requestedOperator, $allowedOperators)) {
+                            if (isset($this->operators[$requestedOperator])) {
+                                $operator = $this->operators[$requestedOperator];
 
-                        $filters[] = ["{$this->table}.{$field}", $operator, $filter];
+                                $filters[] = ["{$this->table}.{$field}", $operator, $filter];
+                            }
+
+                            if (isset($this->nullableOperators[$requestedOperator])) {
+                                $operatorMethod = $this->nullableOperators[$requestedOperator];
+
+                                $this->builder->getQuery()
+                                    ->{$operatorMethod}($field);
+                            }
+
+                            if (isset($this->rangeOperators[$requestedOperator])) {
+                                $operatorMethod = $this->rangeOperators[$requestedOperator];
+                                $arguments = preg_split('/(?<!\\\\)\,/u', $filter, -1, PREG_SPLIT_NO_EMPTY);
+
+                                $this->builder->getQuery()
+                                    ->{$operatorMethod}($field, $arguments);
+                            }
+
+                            if (isset($this->dateOperators[$requestedOperator])) {
+                                try {
+                                    $date = Carbon::createFromDate($filter);
+                                } catch (InvalidFormatException) {
+                                    $filterFormatException = new FilterFormatException();
+
+                                    throw $filterFormatException->setField($requestedField)
+                                        ->setFilter($requestedOperator);
+                                }
+
+                                $operatorMethod = $this->dateOperators[$requestedOperator]['method'];
+                                $operatorOperator = $this->dateOperators[$requestedOperator]['operator'];
+
+                                $this->builder->getQuery()
+                                    ->{$operatorMethod}($field, $operatorOperator, $date);
+                            }
+                        } else {
+                            $resourceFilterException = new FilterNotAllowedException();
+
+                            throw $resourceFilterException->setField($requestedField)
+                                ->setFilter($requestedOperator);
+                        }
                     }
 
-                    if (isset(
-                        $this->relationFilterable[$requestedField][$requestedOperator], $this->operators[$requestedOperator]
-                    )) {
-
-                        $relationField = $this->relationFilterable[$requestedField][$requestedOperator];
-                        $operator = $this->operators[$requestedOperator];
+                    if (isset($this->relationFilterable[$requestedField])) {
+                        $relationField = $this->relationFilterable[$requestedField]['field'];
+                        $allowedOperators = $this->relationFilterable[$requestedField]['operators'];
 
                         $relationPath = mb_substr($relationField, 0, mb_strrpos($relationField, '.'));
                         $field = mb_substr(mb_substr($relationField, mb_strrpos($relationField, '.')), 1);
 
-                        $this->builder->whereRelation($relationPath, $field, $operator, $filter);
+                        if (in_array($requestedOperator, $allowedOperators)) {
+                            if (isset($this->operators[$requestedOperator])) {
+                                $operator = $this->operators[$requestedOperator];
+
+                                $this->builder->whereRelation($relationPath, $field, $operator, $filter);
+                            }
+
+                            if (isset($this->nullableOperators[$requestedOperator])) {
+                                $operatorMethod = $this->nullableOperators[$requestedOperator];
+
+                                $this->builder->whereRelation(
+                                    $relationPath,
+                                    function (Builder $relationBuilder) use ($operatorMethod, $field): void {
+                                        $relationBuilder->{$operatorMethod}($field);
+                                    }
+                                );
+                            }
+
+                            if (isset($this->rangeOperators[$requestedOperator])) {
+                                $operatorMethod = $this->rangeOperators[$requestedOperator];
+
+                                $this->builder->whereRelation(
+                                    $relationPath,
+                                    function (Builder $relationBuilder) use ($operatorMethod, $field, $filter): void {
+                                        $arguments = preg_split('/(?<!\\\\)\,/u', $filter, -1, PREG_SPLIT_NO_EMPTY);
+
+                                        $relationBuilder->{$operatorMethod}($field, $arguments);
+                                    }
+                                );
+                            }
+
+                            if (isset($this->dateOperators[$requestedOperator])) {
+                                try {
+                                    $date = Carbon::createFromDate($filter);
+                                } catch (InvalidFormatException) {
+                                    $filterFormatException = new FilterFormatException();
+
+                                    throw $filterFormatException->setField($requestedField)
+                                        ->setFilter($requestedOperator);
+                                }
+
+                                $operatorMethod = $this->dateOperators[$requestedOperator]['method'];
+                                $operatorOperator = $this->dateOperators[$requestedOperator]['operator'];
+
+                                $this->builder->whereRelation(
+                                    $relationPath,
+                                    function (Builder $relationBuilder) use ($operatorMethod, $operatorOperator, $field, $filter): void {
+                                        $relationBuilder->{$operatorMethod}($field, $operatorOperator, $filter);
+                                    }
+                                );
+                            }
+                        } else {
+                            $resourceFilterException = new FilterNotAllowedException();
+
+                            throw $resourceFilterException->setField($requestedField)
+                                ->setFilter($requestedOperator);
+                        }
                     }
                 }
 
