@@ -320,14 +320,14 @@ class Query
      */
     protected function sort(): void
     {
-        $validationPattern = '/^-?(?:[a-z][a-zA-Z0-9]*)(?:,-?(?:[a-z][a-zA-Z0-9]*))*$/u';
+        $sortValidationPattern = '/^[-]?(?:[a-z][a-zA-Z0-9]*(?:[.][a-z][a-zA-Z0-9]*)*)(?:[,][-]?(?:[a-z][a-zA-Z0-9]*(?:[.][a-z][a-zA-Z0-9]*)*))*$/u';
 
         if ($this->request->has("sort")) {
             if ( ! is_string($this->request->query('sort'))) {
                 throw new SortMalformedException();
             }
 
-            if ( ! preg_match($validationPattern, $this->request->query('sort'))) {
+            if ( ! preg_match($sortValidationPattern, $this->request->query('sort'))) {
                 throw new SortMalformedException();
             }
 
