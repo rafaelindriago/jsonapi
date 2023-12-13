@@ -8,14 +8,21 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class ResourceSortException extends Exception
+class FilterOperatorNotAllowedException extends Exception
 {
     /**
-     * The non sortable field.
+     * The field that do not allow the filter opeator.
      *
      * @var string
      */
     protected $field;
+
+    /**
+     * The filter opetator intended to apply.
+     *
+     * @var string
+     */
+    protected $operator;
 
     /**
      * Render the exception into an HTTP response.
@@ -28,12 +35,10 @@ class ResourceSortException extends Exception
                     'status'    => '400',
 
                     'title'     => 'Bad request',
-                    'detail'    => empty(trim($this->field)) === false
-                                    ? "The field {$this->field} is not sortable."
-                                    : 'The sort parameter is malformed.',
+                    'detail'    => 'The filter operator is not allowed for this field.',
 
                     'source' => [
-                        'parameter' => 'sort',
+                        'parameter' => "filter[{$this->field}][{$this->operator}]",
                     ],
                 ],
             ],
@@ -43,11 +48,21 @@ class ResourceSortException extends Exception
     }
 
     /**
-     * Set the non sortable field.
+     * Set the field that do not allow the filter operator.
      */
-    public function setField(string $field)
+    public function setField(string $field): static
     {
         $this->field = $field;
+
+        return $this;
+    }
+
+    /**
+     * Set the filter operator intended to apply.
+     */
+    public function setOperator(string $operator): static
+    {
+        $this->operator = $operator;
 
         return $this;
     }

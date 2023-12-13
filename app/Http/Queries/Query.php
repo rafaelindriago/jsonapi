@@ -7,6 +7,9 @@ namespace App\Http\Queries;
 use App\Exceptions\Api\FilterFormatException;
 use App\Exceptions\Api\FilterMalformedException;
 use App\Exceptions\Api\FilterNotAllowedException;
+use App\Exceptions\Api\FilterOperatorNotAllowedException;
+use App\Exceptions\Api\SortMalformedException;
+use App\Exceptions\Api\SortNotAllowedException;
 use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -163,6 +166,15 @@ class Query
 
     /**
      * Create a new resource query.
+     *
+     * @throws \App\Exceptions\Api\FilterMalformedException
+     * @throws \App\Exceptions\Api\FilterNotAllowedException
+     * @throws \App\Exceptions\Api\FilterOperatorNotAllowedException
+     * @throws \App\Exceptions\Api\FilterFormatException
+     *
+     * @throws \App\Exceptions\Api\SortMalformedException
+     * @throws \App\Exceptions\Api\SortNotAllowedException
+     * @throws InvalidArgumentException
      */
     public function __construct(Builder $builder)
     {
@@ -302,11 +314,23 @@ class Query
     /**
      * Get the requested sortings and apply them to the query builder.
      *
+     * @throws \App\Exceptions\Api\SortMalformedException
+     * @throws \App\Exceptions\Api\SortNotAllowedException
      * @throws InvalidArgumentException
      */
     protected function sort(): void
     {
+        $validationPattern = '/^-?(?:[a-z][a-zA-Z0-9]*)(?:,-?(?:[a-z][a-zA-Z0-9]*))*$/u';
+
         if ($this->request->has("sort")) {
+            if ( ! is_string($this->request->query('sort'))) {
+                throw new SortMalformedException();
+            }
+
+            if ( ! preg_match($validationPattern, $this->request->query('sort'))) {
+                throw new SortMalformedException();
+            }
+
             $requestedSortings = $this->request->string("sort")
                 ->explode(',');
 
@@ -320,9 +344,8 @@ class Query
 
                     $this->builder->getQuery()
                         ->orderBy("{$this->table}.{$field}", $mode);
-                }
 
-                if (isset($this->relationSortable[$requestedField])) {
+                } elseif (isset($this->relationSortable[$requestedField])) {
                     $relationField = $this->relationSortable[$requestedField];
 
                     $relation = null;
@@ -367,6 +390,11 @@ class Query
 
                     $this->builder->getQuery()
                         ->orderBy("{$table}.{$field}", $mode);
+
+                } else {
+                    $sortNotAllowedException = new SortNotAllowedException();
+
+                    throw $sortNotAllowedException->setField($requestedField);
                 }
             }
         }
@@ -377,10 +405,14 @@ class Query
      *
      * @throws \App\Exceptions\Api\FilterMalformedException
      * @throws \App\Exceptions\Api\FilterNotAllowedException
+     * @throws \App\Exceptions\Api\FilterOperatorNotAllowedException
      * @throws \App\Exceptions\Api\FilterFormatException
      */
     protected function filter(): void
     {
+        $rangeValidationPattern = '/^(?:[^,]|\\\,)+(?:,(?:[^,]|\\\,)+)+$/u';
+        $rangeSplitPattern = '/(?<!\\\)[,]/u';
+
         if ($this->request->has('filter')) {
             $requestedFilters = $this->request->collect('filter');
 
@@ -411,8 +443,19 @@ class Query
                             }
 
                             if (isset($this->rangeOperators[$requestedOperator])) {
+                                if ( ! preg_match($rangeValidationPattern, $filter)) {
+                                    $filterFormatException = new FilterFormatException();
+
+                                    throw $filterFormatException->setField($requestedField)
+                                        ->setFilter($requestedOperator);
+                                }
+
                                 $operatorMethod = $this->rangeOperators[$requestedOperator];
-                                $arguments = preg_split('/(?<!\\\\)\,/u', $filter, -1, PREG_SPLIT_NO_EMPTY);
+
+                                $arguments = array_map(
+                                    fn(string $argument) => mb_ereg_replace('\\\,', ',', $argument),
+                                    mb_split($rangeSplitPattern, $filter)
+                                );
 
                                 $this->builder->getQuery()
                                     ->{$operatorMethod}($field, $arguments);
@@ -435,14 +478,13 @@ class Query
                                     ->{$operatorMethod}($field, $operatorOperator, $date);
                             }
                         } else {
-                            $resourceFilterException = new FilterNotAllowedException();
+                            $filterOperatorNotAllowedException = new FilterOperatorNotAllowedException();
 
-                            throw $resourceFilterException->setField($requestedField)
-                                ->setFilter($requestedOperator);
+                            throw $filterOperatorNotAllowedException->setField($requestedField)
+                                ->setOperator($requestedOperator);
                         }
-                    }
 
-                    if (isset($this->relationFilterable[$requestedField])) {
+                    } elseif (isset($this->relationFilterable[$requestedField])) {
                         $relationField = $this->relationFilterable[$requestedField]['field'];
                         $allowedOperators = $this->relationFilterable[$requestedField]['operators'];
 
@@ -468,13 +510,23 @@ class Query
                             }
 
                             if (isset($this->rangeOperators[$requestedOperator])) {
+                                if ( ! preg_match($rangeValidationPattern, $filter)) {
+                                    $filterFormatException = new FilterFormatException();
+
+                                    throw $filterFormatException->setField($requestedField)
+                                        ->setFilter($requestedOperator);
+                                }
+
                                 $operatorMethod = $this->rangeOperators[$requestedOperator];
+
+                                $arguments = array_map(
+                                    fn(string $argument) => mb_ereg_replace('\\\,', ',', $argument),
+                                    mb_split($rangeSplitPattern, $filter)
+                                );
 
                                 $this->builder->whereRelation(
                                     $relationPath,
-                                    function (Builder $relationBuilder) use ($operatorMethod, $field, $filter): void {
-                                        $arguments = preg_split('/(?<!\\\\)\,/u', $filter, -1, PREG_SPLIT_NO_EMPTY);
-
+                                    function (Builder $relationBuilder) use ($operatorMethod, $field, $arguments): void {
                                         $relationBuilder->{$operatorMethod}($field, $arguments);
                                     }
                                 );
@@ -495,17 +547,22 @@ class Query
 
                                 $this->builder->whereRelation(
                                     $relationPath,
-                                    function (Builder $relationBuilder) use ($operatorMethod, $operatorOperator, $field, $filter): void {
-                                        $relationBuilder->{$operatorMethod}($field, $operatorOperator, $filter);
+                                    function (Builder $relationBuilder) use ($operatorMethod, $operatorOperator, $field, $date): void {
+                                        $relationBuilder->{$operatorMethod}($field, $operatorOperator, $date);
                                     }
                                 );
                             }
                         } else {
-                            $resourceFilterException = new FilterNotAllowedException();
+                            $filterOperatorNotAllowedException = new FilterOperatorNotAllowedException();
 
-                            throw $resourceFilterException->setField($requestedField)
-                                ->setFilter($requestedOperator);
+                            throw $filterOperatorNotAllowedException->setField($requestedField)
+                                ->setOperator($requestedOperator);
                         }
+
+                    } else {
+                        $filterNotAllowedException = new FilterNotAllowedException();
+
+                        throw $filterNotAllowedException->setField($requestedField);
                     }
                 }
 

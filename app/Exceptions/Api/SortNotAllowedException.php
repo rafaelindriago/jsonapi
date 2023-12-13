@@ -8,10 +8,10 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class FilterNotAllowedException extends Exception
+class SortNotAllowedException extends Exception
 {
     /**
-     * The field that is not allowed to filter.
+     * The field that is not allowed to sort.
      *
      * @var string
      */
@@ -28,10 +28,10 @@ class FilterNotAllowedException extends Exception
                     'status'    => '400',
 
                     'title'     => 'Bad request',
-                    'detail'    => "The field {$this->field} is not allowed to filter.",
+                    'detail'    => "The field {$this->field} is not allowed to sort.",
 
                     'source' => [
-                        'parameter' => "filter[{$this->field}]",
+                        'parameter' => "sort",
                     ],
                 ],
             ],
@@ -41,7 +41,7 @@ class FilterNotAllowedException extends Exception
     }
 
     /**
-     * Set the field that is not allowed to filter.
+     * Set the field that is not allowed to sort.
      */
     public function setField(string $field): static
     {
