@@ -148,19 +148,19 @@ class Query
         ],
         'after' => [
             'method'    => 'whereDate',
-            'operator'  => '>',
+            'operator'  => '<',
         ],
         'afterOrEqual' => [
             'method'    => 'whereDate',
-            'operator'  => '>=',
+            'operator'  => '<=',
         ],
         'before' => [
             'method'    => 'whereDate',
-            'operator'  => '<',
+            'operator'  => '>',
         ],
         'beforeOrEqual' => [
             'method'    => 'whereDate',
-            'operator'  => '<=',
+            'operator'  => '>=',
         ],
     ];
 
