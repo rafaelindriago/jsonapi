@@ -375,12 +375,15 @@ class Query
 
                             $foreignKey = $relation->getForeignKeyName();
 
-                            if ( ! in_array($parentTable, $joins)) {
+                            $parentAlias = "{$table}_{$parentTable}";
+                            $parentTableAlias = "{$parentTable} as {$parentAlias}";
+
+                            if ( ! in_array($parentTableAlias, $joins)) {
                                 $this->builder->getQuery()
-                                    ->join($parentTable, "{$table}.{$foreignKey}", "{$parentTable}.{$parentKey}");
+                                    ->join($parentTableAlias, "{$table}.{$foreignKey}", "{$parentAlias}.{$parentKey}");
                             }
 
-                            $table = $parentTable;
+                            $table = $parentAlias;
                         } else {
                             throw new InvalidArgumentException('Only fields from a BelongsTo relationship can be sorted.');
                         }
