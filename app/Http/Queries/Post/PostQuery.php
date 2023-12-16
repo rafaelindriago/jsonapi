@@ -5,9 +5,17 @@ declare(strict_types=1);
 namespace App\Http\Queries\Post;
 
 use App\Http\Queries\Query;
+use App\Models\Post;
 
 class PostQuery extends Query
 {
+    /**
+     * The model class associated with the resource.
+     *
+     * @var string
+     */
+    protected $model = Post::class;
+
     /**
      * The map of fields that can be requested.
      *

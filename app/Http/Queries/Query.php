@@ -13,6 +13,7 @@ use App\Exceptions\Api\SortNotAllowedException;
 use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\Query\JoinClause;
@@ -22,21 +23,28 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 
-class Query
+abstract class Query
 {
-    /**
-     * The builder of the query.
-     *
-     * @var \Illuminate\Database\Eloquent\Builder
-     */
-    protected $builder;
-
     /**
      * The request with the query parameters.
      *
      * @var \Illuminate\Http\Request
      */
     protected $request;
+
+    /**
+     * The model class associated with the resource.
+     *
+     * @var string
+     */
+    protected $model = Model::class;
+
+    /**
+     * The builder of the query.
+     *
+     * @var \Illuminate\Database\Eloquent\Builder
+     */
+    protected $builder;
 
     /**
      * The resource type.
@@ -176,10 +184,11 @@ class Query
      * @throws \App\Exceptions\Api\SortNotAllowedException
      * @throws InvalidArgumentException
      */
-    public function __construct(Builder $builder)
+    public function __construct()
     {
-        $this->builder = $builder;
         $this->request = Request::capture();
+
+        $this->builder = $this->model::query();
 
         $this->resolveResourceType();
         $this->resolveResourceTable();
