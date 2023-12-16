@@ -13,7 +13,6 @@ use App\Exceptions\Api\SortNotAllowedException;
 use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\Query\JoinClause;
@@ -37,7 +36,7 @@ abstract class Query
      *
      * @var string
      */
-    protected $model = Model::class;
+    protected $model;
 
     /**
      * The builder of the query.
@@ -188,7 +187,11 @@ abstract class Query
     {
         $this->request = Request::capture();
 
-        $this->builder = $this->model::query();
+        if (class_exists($this->model)) {
+            $this->builder = $this->model::query();
+        } else {
+            throw new InvalidArgumentException('The model class for the query must be defined in the subclass.');
+        }
 
         $this->resolveResourceType();
         $this->resolveResourceTable();
