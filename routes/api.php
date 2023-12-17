@@ -23,6 +23,8 @@ Route::apiResource('users', \App\Http\Controllers\Api\User\UserController::class
 
 Route::apiResource('posts', \App\Http\Controllers\Api\Post\PostController::class);
 
+Route::apiResource('comments', \App\Http\Controllers\Api\Comment\CommentController::class);
+
 Route::fallback(function (Request $request): void {
     throw new RequestNotFoundException();
 });
