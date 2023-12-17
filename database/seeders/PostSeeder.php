@@ -15,14 +15,11 @@ class PostSeeder extends Seeder
      */
     public function run(): void
     {
-        $users = User::query()->where('type', 'writer')->get();
+        $users = User::query()->where('type', '=', 'writer')->get();
 
-        Post::factory(3)->for($users->first(), 'writer')->published()->create();
-
-        Post::factory(2)->for($users->first(), 'writer')->create();
-
-        Post::factory(2)->for($users->last(), 'writer')->published()->create();
-
-        Post::factory(3)->for($users->last(), 'writer')->create();
+        foreach ($users as $user) {
+            Post::factory(3)->for($user, 'writer')->published()->create();
+            Post::factory(2)->for($user, 'writer')->create();
+        }
     }
 }

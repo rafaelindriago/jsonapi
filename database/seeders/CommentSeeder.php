@@ -17,7 +17,7 @@ class CommentSeeder extends Seeder
     public function run(): void
     {
         $users = User::query()->get();
-        $posts = Post::query()->whereNotNull('published_at')->get();
+        $posts = Post::query()->where('published_at', '!=', null)->get();
 
         foreach ($posts as $post) {
             Comment::factory(5)->for($post)->for($users->random(), 'writer')->create();
