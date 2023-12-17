@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Queries;
 
+use App\Exceptions\Api\FieldNotAllowedException;
+use App\Exceptions\Api\FieldsMalformedException;
 use App\Exceptions\Api\FilterFormatException;
 use App\Exceptions\Api\FilterMalformedException;
 use App\Exceptions\Api\FilterNotAllowedException;
@@ -272,7 +274,17 @@ abstract class Query
      */
     protected function sparseFields(): void
     {
+        $fieldsPattern = '/^(?:[a-z][a-zA-Z0-9]*)(?:[,][a-z][a-zA-Z0-9]*)*$/';
+
         if ($this->request->has("fields.{$this->type}")) {
+            if ( ! is_string($this->request->input("fields.{$this->type}"))) {
+                throw new FieldsMalformedException();
+            }
+
+            if ( ! preg_match($fieldsPattern, $this->request->input("fields.{$this->type}"))) {
+                throw new FieldsMalformedException();
+            }
+
             $requestedFields = $this->request->string("fields.{$this->type}")
                 ->explode(',');
 
@@ -285,9 +297,8 @@ abstract class Query
 
                     $this->builder->getQuery()
                         ->addSelect("{$this->table}.{$field}");
-                }
 
-                if (isset($this->relationFields[$requestedField])) {
+                } elseif (isset($this->relationFields[$requestedField])) {
                     $relationField = $this->relationFields[$requestedField];
 
                     $relation = $this->builder->getModel()
@@ -313,6 +324,12 @@ abstract class Query
 
                         $this->builder->with("{$relationField}:{$parentKey}");
                     }
+
+                } else {
+                    $fieldNotAllowedException = new FieldNotAllowedException();
+
+                    throw $fieldNotAllowedException->setType($this->type)
+                        ->setField($requestedField);
                 }
             }
         }

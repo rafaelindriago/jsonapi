@@ -71,6 +71,5 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'resource.type' => \App\Http\Middleware\Api\ValidateResourceType::class,
         'resource.id' => \App\Http\Middleware\Api\ValidateResourceId::class,
-        'resource.fields' => \App\Http\Middleware\Api\ValidateResourceFields::class,
     ];
 }
